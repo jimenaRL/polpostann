@@ -2,6 +2,7 @@ import os
 import sys
 import csv
 import json
+import time
 import sqlite3
 import logging
 import numpy as np
@@ -12,7 +13,7 @@ from argparse import ArgumentParser
 from vllm import LLM, SamplingParams
 from vllm.sampling_params import GuidedDecodingParams
 
-DEFAULTOUTFOLDER = "/home/jimena.royoletelier/storage/toErase"
+DEFAULTOUTFOLDER = "set/your/default/folder"
 DEFAULTBATCHSIZE = 5000
 DEFAULTMODELPARAMS = '{"model": "HuggingFaceH4/zephyr-7b-beta", "guided_decoding_backend": "xgrammar", "seed": 19, "dtype": "half", "max_model_len": 21500, "gpu_memory_utilization": 0.9, "tensor_parallel_size": 1}'
 DEFAULTSAMPLEPARAMS = '{"temperature": 0.7, "top_p": 0.95, "top_k": 50, "max_tokens": 16, "repetition_penalty": 1.2, "seed": 19}'
@@ -40,52 +41,6 @@ def make_logger(logfile):
             logging.FileHandler(logfile, 'w', 'utf-8'),
             logging.StreamHandler(sys.stdout)])
     return logger
-
-
-def getData(dbpath, label, logger):
-
-    table = f'llm_answer_{label}'
-
-    # 1/ Retrive the english translations
-    logger.info(f"Retreiving bios from {dbpath}.")
-    QUERY = "SELECT pseudo_id,english_translation FROM english_translations"
-    with sqlite3.connect(dbpath) as con:
-        cur = con.cursor()
-        cur.execute(QUERY)
-        data = cur.fetchall()
-
-    # 2/ Remove already translated entries
-    QUERY = f"""
-            SELECT EXISTS (
-                SELECT
-                    name
-                FROM
-                    sqlite_master
-                WHERE
-                    type='table' AND
-                    name='{table}'
-            )"""
-    with sqlite3.connect(dbpath) as con:
-        cur = con.cursor()
-        cur.execute(QUERY)
-        res = cur.fetchall()
-    table_exists = res[0][0] == 1
-
-    if table_exists:
-        QUERY = f"SELECT pseudo_id FROM {table}"
-        with sqlite3.connect(dbpath) as con:
-            cur = con.cursor()
-            cur.execute(QUERY)
-            res = cur.fetchall()
-        computed_pids = [r[0] for r in res]
-        logger.info(
-            f"Found {len(computed_pids)} already computed entries in {table}.")
-        data = [d for d in data if d[0] not in computed_pids]
-
-    logger.info(f"Found {len(data)} entries to be computed in {table}.")
-
-    return data
-
 
 def make_prompts(system_prompt, user_prompt, tweets):
     return [
@@ -141,13 +96,11 @@ def compute_llm_asnwers(data, model, sampling_params, system_prompt, user_prompt
 
         writeCsv(file, rows, outcolumns, logger)
 
-    return data
-
 
 if __name__ == "__main__":
 
     """
-    Example of script calling using 2 V100 gpu cards.
+    Example of script calling using 2 gpu cards ('tensor_parallel_size' vllm model variable).
     Deepseek recommends to avoid adding a system prompt; all instructions should be contained within the user prompt.
 
      python tweets.py \
@@ -158,8 +111,8 @@ if __name__ == "__main__":
         --system_prompt='' \
         --user_prompt='You are an expert in French politics. Please classify the following social media message (that were posted in the weeks leading up to the 2022 presidential election in France) according to whether it express support or positive attitudes towards Le Pen in this election. You must use only the information contained in the message. Be concise and answer only YES or NO. Here is the message: ${tweet}' \
         --guided_choice=YES,NO \
-        --logfile=/sps/humanum/user/jroyolet/dev/llmBenchmarks/tweetsOffilineMultiGPU/logs/2Xv100DeepSeek-R1-Distill-Qwen-32B.log \
-        --outfolder=/sps/humanum/user/jroyolet/dev/llmBenchmarks/tweetsOffilineMultiGPU/2Xv100DeepSeek-R1-Distill-Qwen-32B/
+        --logfile=2Xv100DeepSeek-R1-Distill-Qwen-32B.log \
+        --outfolder=2Xv100DeepSeek-R1-Distill-Qwen-32B
     """
 
     ap = ArgumentParser()
@@ -194,13 +147,26 @@ if __name__ == "__main__":
 
     os.makedirs(outfolder, exist_ok=True)
 
-    # 1/ Make logger and log parameters
+    # 0/ Make logger and log parameters
     logger = make_logger(logfile)
 
     parameters = vars(args)
     dumped_parameters = json.dumps(parameters, sort_keys=True, indent=4)
     logger.info("---------------------------------------------------------")
     logger.info(f"PARAMETERS:\n{dumped_parameters[2:-2]}")
+
+    # 1/ Load prompts
+    if os.path.exists(system_prompt):
+        logger.info(f"System prompt loaded from file at {system_prompt}:")
+        with open(system_prompt, 'r') as f:
+            system_prompt = f.read()
+        logger.info(f"\t{system_prompt}")
+
+    if os.path.exists(user_prompt):
+        logger.info(f"User promt loaded from file at {user_prompt}:")
+        with open(user_prompt, 'r') as f:
+            user_prompt = f.read()
+        logger.info(f"\t{user_prompt}")
 
     # 2/ Load data (tweets) to be used in prompts
     if not os.path.exists(tweets_file):
@@ -224,7 +190,10 @@ if __name__ == "__main__":
     model = LLM(**model_params)
 
     # 5/ Compute answers
+    start = time.time()
     compute_llm_asnwers(
         tweets, model, sp,
         system_prompt, user_prompt,
         outfolder, logger)
+    elapsed = time.time() - start
+    logger.info(f"Annotationg {len(tweets)} tweets took {elapsed} seconds, this is {elapsed / len(tweets)} seconds per tweet.")

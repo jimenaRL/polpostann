@@ -1,26 +1,44 @@
 import os
 import csv
 import json
+from argparse import ArgumentParser
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import \
     precision_recall_fscore_support, \
     accuracy_score
 
+ap = ArgumentParser()
+ap.add_argument('--version', type=str, default="v3debug")
+args = ap.parse_args()
+version = args.version
+
 BASEPATH = "/home/jimena/work/dev/polpostann"
 GTFILE = os.path.join(BASEPATH, "ground_truth_v2_400.csv")
-VERSION = "v3"
-RESULTSFOLDER = os.path.join(BASEPATH, "results", VERSION)
-METRICSFOLDER = os.path.join(BASEPATH, "metrics", VERSION)
+RESULTSFOLDER = os.path.join(BASEPATH, "results", version)
+METRICSFOLDER = os.path.join(RESULTSFOLDER, "metrics")
 os.makedirs(METRICSFOLDER, exist_ok=True)
 
 MODELS = {
-    "v3": [
+    "v3debug": [
         "zephyr-7b-beta",
         "Mistral-Small-24B-Instruct-2501",
-        # "Llama-3.3-70B-Instruct",
+        "Llama-3.3-70B-Instruct",
         "Mistral-Large-Instruct-2411",
-        "mayorityVote",
+        "mayorityVote"
+    ],
+    "v3debugEnglish": [
+        "zephyr-7b-beta",
+        "Mistral-Small-24B-Instruct-2501",
+        "Llama-3.3-70B-Instruct",
+        "Mistral-Large-Instruct-2411",
+    ],
+    "v3debugFrench": [
+        "zephyr-7b-beta",
+        "Mistral-Small-24B-Instruct-2501",
+        "Llama-3.3-70B-Instruct",
+        "Mistral-Large-Instruct-2411",
     ],
 }
 
@@ -83,7 +101,7 @@ for annotation in ANNOTATIONS:
     idxs = range(len(gt))
 
     metrics = []
-    for model in MODELS[VERSION]:
+    for model in MODELS[version]:
 
         model_abb = model.split('000_')[-1]
 
@@ -180,7 +198,7 @@ for annotation in ANNOTATIONS:
     df = pd.DataFrame.from_records(metrics).sort_values(by=["params"])
     path = os.path.join(METRICSFOLDER, f"{annotation.replace('/', '_')}.csv")
     df.to_csv(path, index=False)
-    print(f"Metrics for annotation {annotation} experiment saved at {path}")
+    print(f"Metrics for annotation {annotation} experiment saved at {path}\n")
 
     cmd = f"xan select model,params,labels,support,accuracy,f1_macro,f1_binary {path} | xan sort -s f1_macro | xan v"
     print(cmd)

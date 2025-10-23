@@ -3,16 +3,22 @@ from glob import glob
 import  pandas as pd
 
 BASEPATH = "/home/jimena/work/dev/polpostann"
-VERSION = "v3"
+VERSION = "v3debugFrench"
 OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs", VERSION)
 RESULTSFOLDER = os.path.join(BASEPATH, "results", VERSION)
 os.makedirs(RESULTSFOLDER, exist_ok=True)
 
 MODELS = {
-    "v3": [
+    "v3debug": [
         "zephyr-7b-beta",
         "Mistral-Small-24B-Instruct-2501",
-        # "Llama-3.3-70B-Instruct",
+        "Llama-3.3-70B-Instruct",
+        "Mistral-Large-Instruct-2411",
+    ],
+    "v3debugFrench": [
+        "zephyr-7b-beta",
+        "Mistral-Small-24B-Instruct-2501",
+        "Llama-3.3-70B-Instruct",
         "Mistral-Large-Instruct-2411",
     ],
 }
