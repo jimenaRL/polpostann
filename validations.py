@@ -1,6 +1,7 @@
 import os
 import csv
 import json
+from glob import glob
 from argparse import ArgumentParser
 
 import numpy as np
@@ -16,31 +17,15 @@ version = args.version
 
 BASEPATH = "/home/jimena/work/dev/polpostann"
 GTFILE = os.path.join(BASEPATH, "ground_truth_v2_400.csv")
+OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs", version)
 RESULTSFOLDER = os.path.join(BASEPATH, "results", version)
 METRICSFOLDER = os.path.join(RESULTSFOLDER, "metrics")
 os.makedirs(METRICSFOLDER, exist_ok=True)
 
-MODELS = {
-    "v3debug": [
-        "zephyr-7b-beta",
-        "Mistral-Small-24B-Instruct-2501",
-        "Llama-3.3-70B-Instruct",
-        "Mistral-Large-Instruct-2411",
-        "mayorityVote"
-    ],
-    "v3debugEnglish": [
-        "zephyr-7b-beta",
-        "Mistral-Small-24B-Instruct-2501",
-        "Llama-3.3-70B-Instruct",
-        "Mistral-Large-Instruct-2411",
-    ],
-    "v3debugFrench": [
-        "zephyr-7b-beta",
-        "Mistral-Small-24B-Instruct-2501",
-        "Llama-3.3-70B-Instruct",
-        "Mistral-Large-Instruct-2411",
-    ],
-}
+MODELS =  [
+    os.path.split(model_path)[-1]
+    for model_path in glob(os.path.join(OUTPUTSFOLDER, "*"))
+]
 
 NBPARAMS = {
     "zephyr-7b-beta": 7,
@@ -56,8 +41,18 @@ NBPARAMS = {
     "max_model_len_7000_Llama-3.3-70B-Instruct": 70,
     "DeepSeek-R1-Distill-Llama-70B": 70,
     "Mistral-Large-Instruct-2411": 123,
-    "mayorityVote": -1,
+    "Unknown": -1
 }
+
+def family(name):
+    for model in NBPARAMS:
+        if name.startswith(model):
+            return model
+    return 'Unknown'
+
+def nbparams(name):
+    return NBPARAMS[family(name)]
+
 
 SUPPORTCHOICES = {
     "multiple": ["Macron", "Mélenchon", "Le Pen", "None"],
@@ -101,7 +96,7 @@ for annotation in ANNOTATIONS:
     idxs = range(len(gt))
 
     metrics = []
-    for model in MODELS[version]:
+    for model in MODELS:
 
         model_abb = model.split('000_')[-1]
 
@@ -182,7 +177,8 @@ for annotation in ANNOTATIONS:
 
             metrics.append({
                 "model": model_abb,
-                "params": NBPARAMS[model],
+                "family": family(model_abb),
+                "params": nbparams(model),
                 "support": ' | '.join(map(str, res[3])),
                 "labels": ' | '.join(SUPPORTCHOICES[setting]),
                 "accuracy": acc,
@@ -200,7 +196,11 @@ for annotation in ANNOTATIONS:
     df.to_csv(path, index=False)
     print(f"Metrics for annotation {annotation} experiment saved at {path}\n")
 
-    cmd = f"xan select model,params,labels,support,accuracy,f1_macro,f1_binary {path} | xan sort -s f1_macro | xan v"
+    # cmd = f"xan select model,params,labels,support,accuracy,f1_macro,f1_binary {path} | xan sort -s f1_macro | xan v"
+    # print(cmd)
+    # os.system(cmd)
+
+    cmd = f"xan groupby family --along-cols params,accuracy,f1_macro 'mean(_)' {path} | xan v"
     print(cmd)
     os.system(cmd)
 

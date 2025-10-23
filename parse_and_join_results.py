@@ -1,27 +1,23 @@
 import os
-from glob import glob
 import  pandas as pd
+from glob import glob
+from argparse import ArgumentParser
+
+ap = ArgumentParser()
+ap.add_argument('--version', type=str, default="v3debug")
+args = ap.parse_args()
+version = args.version
 
 BASEPATH = "/home/jimena/work/dev/polpostann"
-VERSION = "v3debugFrench"
-OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs", VERSION)
-RESULTSFOLDER = os.path.join(BASEPATH, "results", VERSION)
+OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs", version)
+RESULTSFOLDER = os.path.join(BASEPATH, "results", version)
 os.makedirs(RESULTSFOLDER, exist_ok=True)
 
-MODELS = {
-    "v3debug": [
-        "zephyr-7b-beta",
-        "Mistral-Small-24B-Instruct-2501",
-        "Llama-3.3-70B-Instruct",
-        "Mistral-Large-Instruct-2411",
-    ],
-    "v3debugFrench": [
-        "zephyr-7b-beta",
-        "Mistral-Small-24B-Instruct-2501",
-        "Llama-3.3-70B-Instruct",
-        "Mistral-Large-Instruct-2411",
-    ],
-}
+MODELS =  [
+    os.path.split(model_path)[-1]
+    for model_path in glob(os.path.join(OUTPUTSFOLDER, "*"))
+]
+
 
 ANNOTATIONS = {
 
@@ -85,10 +81,10 @@ def parseAnwers(whole_answer, model, setting):
 
 def extract_data(model, annotation, setting, df=None, columns=[]):
 
-    assert model in MODELS[VERSION]
+    assert model in MODELS
     assert setting in SETTINGS
 
-    folders = glob(os.path.join(OUTPUTSFOLDER, f"*{model}*"))
+    folders = glob(os.path.join(OUTPUTSFOLDER, model))
     assert len(folders) == 1
     folder = folders[0]
 
@@ -117,7 +113,7 @@ for setting in SETTINGS:
         df = None
         columns = ["idx", "tweet"]
 
-        for model in MODELS[VERSION]:
+        for model in MODELS:
             df, columns = extract_data(model, annotation, setting, df, columns)
 
         df = df.assign(guidedMayorityVote=df[df.columns[2:]].mode(axis=1)[0])
