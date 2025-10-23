@@ -4,7 +4,7 @@ Scripts for tweets annotation using llm models via [vllm](https://docs.vllm.ai/e
 
 ## Usage
 
-1. We have one python scripts that take as arguments the llm model parameters, the sampling parameters, a csv file where the tweets to annotate are and the name of the column, as well as the system and the user prompt.     
+1. We have one python scripts that take as arguments the llm model parameters, the sampling parameters, a csv file where the tweets to annotate are and the name of the column, as well as the system and the user prompts.     
 
 Example of script calling using 2 gpu cards ('tensor_parallel_size' vllm model variable).
 Deepseek recommends to avoid adding a system prompt; all instructions should be contained within the user prompt.
