@@ -10,7 +10,7 @@ Example of script calling using 2 gpu cards ('tensor_parallel_size' vllm model v
 Deepseek recommends to avoid adding a system prompt; all instructions should be contained within the user prompt.
 
 ```
-     python tweets.py \
+     python annotate_tweets.py \
         --model_params='{"model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", "guided_decoding_backend": "xgrammar", "seed": 19, "dtype": "half", "gpu_memory_utilization": 0.9, "tensor_parallel_size": 2}' \
         --sampling_params='{"temperature": 0.6, "top_p": 0.95}' \
         --tweets_file=200_sampled_xan_seed_123_fr_en.csv \
