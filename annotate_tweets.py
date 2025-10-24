@@ -81,6 +81,18 @@ def compute_llm_asnwers(data, model, sampling_params, system_prompt, user_prompt
         if len(tweets) == 0:
             continue
 
+        file = os.path.join(output_folder, f"llm_answer_{batch_idx}.csv")
+        lockfile = file + ".lock"
+
+        # If batch already computed continue or lock is granted, continue
+        if os.path.exists(file) or os.path.exists(lockfile):
+            logger.info(f"Already computed file at {file}. Continuing.")
+            continue
+        # If not, create lock and start batch computation
+        with open(lockfile, 'w') as f:
+            csv.writer(f).writerow(outcolumns)
+        logger.info(f"Computing batch at index {batch_idx}...")
+
         prompts = make_prompts(system_prompt, user_prompt, data[b[0]: b[1]])
 
         outputs = model.chat(
@@ -92,9 +104,10 @@ def compute_llm_asnwers(data, model, sampling_params, system_prompt, user_prompt
 
         rows = zip(tweets_idx[b[0]: b[1]], data[b[0]: b[1]], parsed_outputs)
 
-        file = os.path.join(output_folder, f"llm_answer_{batch_idx}.csv")
-
+        # write computed data
         writeCsv(file, rows, outcolumns, logger)
+        # and release lock
+        os.system(f"rm {lockfile}")
 
 
 if __name__ == "__main__":
