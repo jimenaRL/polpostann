@@ -13,8 +13,10 @@ Example of the slurm file
 
 #SBATCH -A nmf@h100                  # set account
 #SBATCH -C h100                      # set gpu_p6 partition (80GB H100 GPU)
-# We use 1 node with 2 gpus and let vllm manage gpus paralellisation,
-# the rest of the paramametes (gres and ntasks-per-node) are set as input variable to this slurm script.
+# We use a single node with several gpus and let vllm manage gpus paralellisation
+# with the 'tensor_parallel_size' model parameter.
+# The number of gpus used is defined by the paramametes 'gres' and 'ntasks-per-node'
+# which are given as input variable when launching this slurm script.
 # We do this to used the same script with different gpus configs for each llm model.
 #SBATCH --nodes=1                    # number of nodes
 #SBATCH --cpus-per-task=24           # number of cores per task for gpu_p6 (1/4 of 4-GPUs H100 node)
@@ -22,7 +24,7 @@ Example of the slurm file
 #SBATCH --time=02:00:00              # maximum execution time requested (HH:MM:SS)
 #SBATCH --qos=qos_gpu_h100-dev
 
-# avoid html call to hugging face hub
+# Set to avoid html call to hugging face hub
 export HF_HUB_OFFLINE=1
 
 # Cleans out modules loaded in interactive and inherited by default
