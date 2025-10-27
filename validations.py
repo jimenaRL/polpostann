@@ -33,13 +33,15 @@ GTFILE = os.path.join(BASEPATH, "ground_truth_v2_400.csv")
 ap = ArgumentParser()
 ap.add_argument('--version', type=str, default="v3ModelSelectionfrench")
 ap.add_argument('--annotation', type=str, default=ANNOTATIONS[0], choices=ANNOTATIONS)
-ap.add_argument('--doparsing', type=bool, default=False)
+ap.add_argument('--doparsing', action='store_true')
+ap.add_argument('--language',type=str, default='french')
 ap.add_argument('--filename', type=str, default="llm_answer_0.csv")
 args = ap.parse_args()
 version = args.version
 annotation = args.annotation
 filename = args.filename
 doparsing = args.doparsing
+language = args.language
 
 OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs_jeanzay", version)
 
@@ -207,9 +209,14 @@ def computeValidationMetrics(annotation):
     # idxs = range(len(gt))
 
     ground_truth = pd.read_csv(GTFILE, dtype=str, keep_default_na=False, na_values=['NaN'])
+    assert ground_truth.isna().sum().sum() == 0
+
     annotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
-    annotations = annotations.merge(ground_truth, on='tweet', how='right')
+    assert annotations.isna().sum().sum() == 0
+
+    annotations = annotations.merge(ground_truth, right_on=language, left_on='tweet', how='right')
     assert len(annotations) == len(ground_truth)
+
     gt = ground_truth[column].tolist()
 
     metrics = []
