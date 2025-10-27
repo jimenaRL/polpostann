@@ -52,6 +52,10 @@ echo "SAMPLINGPARAMS:"
 echo "${SAMPLINGPARAMS}"
 
 echo ""
+echo "CHOICES:"
+echo "${CHOICES}"
+
+echo ""
 echo "OUTFOLDER:"
 echo "${OUTFOLDER}"
 
