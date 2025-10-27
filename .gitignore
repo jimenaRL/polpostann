@@ -1,3 +1,6 @@
+outputs
+*.csv
 .python-version
 *.log
+*.out
 .ipynb_checkpoints
