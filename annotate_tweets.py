@@ -170,16 +170,16 @@ if __name__ == "__main__":
 
     # 1/ Load prompts
     if os.path.exists(system_prompt):
-        logger.info(f"System prompt loaded from file at {system_prompt}:")
+        logger.info(f"System prompt loaded from file at {system_prompt}")
         with open(system_prompt, 'r') as f:
             system_prompt = f.read()
-        logger.info(f"\t{system_prompt}")
+    logger.info(f"System prompt:\n\t{system_prompt}")
 
     if os.path.exists(user_prompt):
-        logger.info(f"User promt loaded from file at {user_prompt}:")
+        logger.info(f"User promt loaded from file at {user_prompt}")
         with open(user_prompt, 'r') as f:
             user_prompt = f.read()
-        logger.info(f"\t{user_prompt}")
+    logger.info(f"User prompt:\n\t{user_prompt}")
 
     # 2/ Load data (tweets) to be used in prompts
     if not os.path.exists(tweets_file):
