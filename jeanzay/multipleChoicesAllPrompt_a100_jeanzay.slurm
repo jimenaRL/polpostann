@@ -61,6 +61,26 @@ echo "SAMPLINGPARAMS:"
 echo "${SAMPLINGPARAMS}"
 
 echo ""
+echo "TWEETSFILE:"
+echo "${TWEETSFILE}"
+
+echo ""
+echo "TWEETSCOLUMN:"
+echo "${TWEETSCOLUMN}"
+
+echo ""
+echo "SYSTEMPROMT:"
+echo "${SYSTEMPROMT}"
+
+echo ""
+echo "USERPROMT:"
+echo "${USERPROMT}"
+
+echo ""
+echo "CHOICES:"
+echo "${CHOICES}"
+
+echo ""
 echo "OUTFOLDER:"
 echo "${OUTFOLDER}"
 
@@ -70,7 +90,7 @@ cmd="python ${SCRIPT} \
        --sampling_params=${SAMPLINGPARAMS} \
        --tweets_file=${TWEETSFILE} \
        --tweets_column=${TWEETSCOLUMN} \
-       --system_prompt=${SYTEMPROMT} \
+       --system_prompt=${SYSTEMPROMT} \
        --user_prompt=${USERPROMT} \
        --guided_choice=${CHOICES} \
        --outfolder=${OUTFOLDER}"
