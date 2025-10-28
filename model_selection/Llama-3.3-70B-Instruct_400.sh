@@ -3,7 +3,7 @@ TASK=$2
 SEED=$3
 GPU=$4
 
-export MODELPARAMS="'{\"model\": \"meta-llama/Llama-3.3-70B-Instruct\", \"guided_decoding_backend\": \"xgrammar\", \"max_model_len\": 1200, \"seed\": ${SEED}, \"tensor_parallel_size\": 2}'"
+export MODELPARAMS="'{\"model\": \"meta-llama/Llama-3.3-70B-Instruct\", \"guided_decoding_backend\": \"xgrammar\", \"max_model_len\": 1200, \"seed\": ${SEED}, \"tensor_parallel_size\": 1}'"
 export SAMPLINGPARAMS="'{\"seed\": ${SEED}, \"max_tokens\": 256}'"
 export NAME=Llama-3.3-70B-Instruct-seed${SEED}
 
@@ -19,7 +19,7 @@ sbatch \
     --job-name=${NAME} \
     --output=${OUTFOLDER}/%j.log  \
     --error=${OUTFOLDER}/%j.out  \
-    --ntasks-per-node=2 \
-    --gres=gpu:h100:2 \
+    --ntasks-per-node=1 \
+    --gres=gpu:h100:1 \
     --export=ALL \
     ${SERVER}/multipleChoicesAllPrompt_${GPU}_${SERVER}.slurm
