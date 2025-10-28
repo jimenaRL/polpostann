@@ -33,11 +33,17 @@ GTFILE = os.path.join(BASEPATH, "ground_truth_v2_400.csv")
 ap = ArgumentParser()
 ap.add_argument('--version', type=str, default="v3ModelSelectionfrench")
 ap.add_argument('--annotation', type=str, default=ANNOTATIONS[0], choices=ANNOTATIONS)
+ap.add_argument('--doparsing', action='store_true')
+ap.add_argument('--language',type=str, default='french')
+ap.add_argument('--filename', type=str, default="llm_answer_0.csv")
 args = ap.parse_args()
 version = args.version
 annotation = args.annotation
+filename = args.filename
+doparsing = args.doparsing
+language = args.language
 
-OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs", version)
+OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs_jeanzay", version)
 
 RESULTSFOLDER = os.path.join(BASEPATH, "results", version)
 os.makedirs(RESULTSFOLDER, exist_ok=True)
@@ -145,7 +151,7 @@ def extract_data(model, annotation, df=None, columns=[]):
 
     # get answers
     colname = model
-    path_guided = os.path.join(folder, "guided", annotation, "llm_answer_0.csv")
+    path_guided = os.path.join(folder, "guided", annotation, filename)
     df_guided = pd.read_csv(path_guided) \
         .fillna("None") \
         .rename(columns={"answer": colname})
@@ -171,11 +177,11 @@ def parseAndJoin(annotation):
     for model in MODELS:
         df, columns = extract_data(model, annotation, df, columns)
 
-    df = df.assign(guidedMayorityVote=df[df.columns[2:]].mode(axis=1)[0])
-    df = df.rename(columns={
-        'guidedMayorityVote':"mayorityVote",
-        })
-    columns.append("mayorityVote")
+    # df = df.assign(guidedMayorityVote=df[df.columns[2:]].mode(axis=1)[0])
+    # df = df.rename(columns={
+    #     'guidedMayorityVote':"mayorityVote",
+    #     })
+    # columns.append("mayorityVote")
 
     path = os.path.join(RESULTSFOLDER, f"{annotation.replace('/', '_')}.csv")
 
@@ -192,22 +198,34 @@ def computeValidationMetrics(annotation):
     task = annotation.split('/')[0]
     column = f"{candidate.upper()} {task.upper()}"
 
-    with open(GTFILE, 'r') as csvfile:
-        reader = csv.DictReader(csvfile)
-        gt = [r[column] for r in reader]
+    # with open(GTFILE, 'r') as csvfile:
+    #     reader = csv.DictReader(csvfile)
+    #     gt = [r[column] for r in reader]
 
-    with open(file, 'r') as csvfile:
-        reader = csv.DictReader(csvfile)
-        annotations = [r for r in reader]
+    # with open(file, 'r') as csvfile:
+    #     reader = csv.DictReader(csvfile)
+    #     annotations = [r for r in reader]
 
-    idxs = range(len(gt))
+    # idxs = range(len(gt))
+
+    ground_truth = pd.read_csv(GTFILE, dtype=str, keep_default_na=False, na_values=['NaN'])
+    assert ground_truth.isna().sum().sum() == 0
+
+    annotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
+    assert annotations.isna().sum().sum() == 0
+
+    annotations = annotations.merge(ground_truth, right_on=language, left_on='tweet', how='right')
+    assert len(annotations) == len(ground_truth)
+
+    gt = ground_truth[column].tolist()
 
     metrics = []
     for model in MODELS:
 
         model_abb = model.split('000_')[-1]
 
-        ann = [a[model] for a in annotations]
+        # ann = [a[model] for a in annotations]
+        ann = annotations[model].tolist()
 
         # binary classification
         if setting == "binary":
@@ -309,13 +327,14 @@ def computeValidationMetrics(annotation):
     # print(cmd)
     os.system(cmd)
 
-    cmd = f"xan groupby family --along-cols params,accuracy,f1_macro 'mean(_)' {path} | xan map '\"{version}\" as cross_validation' | xan map '\"{version}\" as cross_validation' | xan v"
+    cmd = f"xan groupby family --along-cols params,accuracy,f1_macro 'mean(_)' {path} | xan map '\"{version}\" as cross_validation' | xan v"
     # print(cmd)
     os.system(cmd)
 
 
 # parse and join results
-parseAndJoin(annotation)
+if doparsing:
+    parseAndJoin(annotation)
 
 # make validations
 computeValidationMetrics(annotation)
