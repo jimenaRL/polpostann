@@ -3,9 +3,9 @@ TASK=$2
 SEED=$3
 GPU=$4
 
-export MODELPARAMS="'{\"model\": \"mistralai/Mistral-Small-24B-Instruct-2501\", \"tokenizer_mode\": \"mistral\", \"config_format\": \"mistral\", \"load_format\": \"mistral\", \"guided_decoding_backend\": \"xgrammar\", \"seed\": ${SEED}, \"tensor_parallel_size\": 1}'"
+export MODELPARAMS="'{\"model\": \"mistralai/Mistral-Large-Instruct-2411\", \"tokenizer_mode\": \"mistral\", \"config_format\": \"mistral\", \"load_format\": \"mistral\", \"guided_decoding_backend\": \"xgrammar\", \"seed\": ${SEED}, \"tensor_parallel_size\": 4}'"
 export SAMPLINGPARAMS="'{\"temperature\": 0.15, \"seed\": ${SEED}, \"max_tokens\": 256}'"
-export NAME=Mistral-Small-24B-Instruct-2501-seed${SEED}
+export NAME=Mistral-Large-Instruct-2411-seed${SEED}
 
 export TWEETSFILE=${POLPOSTANNPATH}/400_balanced_sampled_xan_seed_999_fr_en.csv
 export TWEETSCOLUMN=${LANGUAGE}
@@ -19,7 +19,7 @@ sbatch \
     --job-name=${NAME} \
     --output=${OUTFOLDER}/%j.log  \
     --error=${OUTFOLDER}/%j.out  \
-    --ntasks-per-node=1 \
-    --gres=gpu:h100:1 \
+    --ntasks-per-node=4 \
+    --gres=gpu:h100:4 \
     --export=ALL \
-    ${SERVER}/multipleChoicesAllPrompt_${GPU}_${SERVER}.slurm
+    ${SERVER}/annotate_tweets_${GPU}_${SERVER}.slurm

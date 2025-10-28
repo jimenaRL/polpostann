@@ -22,4 +22,4 @@ sbatch \
     --ntasks-per-node=1 \
     --gres=gpu:h100:1 \
     --export=ALL \
-    ${SERVER}/multipleChoicesAllPrompt_${GPU}_${SERVER}.slurm
+    ${SERVER}/annotate_tweets_${GPU}_${SERVER}.slurm
