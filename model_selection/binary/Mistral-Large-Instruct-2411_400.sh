@@ -1,8 +1,22 @@
+#!/bin/bash
+
 LANGUAGE=$1    # frech
-TASK=$2        # criticism
+TASK=$2        # voteintention
 SEED=$3        # 1
 GPU=$4         # h100
 CANDIDATE=$5   # macron
+
+if [ ${LANGUAGE} = 'french' ]; then
+    export CHOICES="OUI,NON"
+else
+    export CHOICES="YES,NO"
+fi
+
+echo "LANGUAGE: ${LANGUAGE}"
+echo "TASK: ${TASK}"
+echo "SEED: ${SEED}"
+echo "GPU: ${GPU}"
+echo "CANDIDATE: ${CANDIDATE}"
 
 export MODELPARAMS="'{\"model\": \"mistralai/Mistral-Large-Instruct-2411\", \"tokenizer_mode\": \"mistral\", \"config_format\": \"mistral\", \"load_format\": \"mistral\", \"guided_decoding_backend\": \"xgrammar\", \"seed\": ${SEED}, \"tensor_parallel_size\": 4}'"
 export SAMPLINGPARAMS="'{\"temperature\": 0.15, \"seed\": ${SEED}, \"max_tokens\": 256}'"

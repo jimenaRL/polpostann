@@ -1,8 +1,22 @@
+#!/bin/bash
+
 LANGUAGE=$1    # frech
-TASK=$2        # criticism
+TASK=$2        # voteintention
 SEED=$3        # 1
 GPU=$4         # h100
 CANDIDATE=$5   # macron
+
+if [ ${LANGUAGE} = 'french' ]; then
+    export CHOICES="OUI,NON"
+else
+    export CHOICES="YES,NO"
+fi
+
+echo "LANGUAGE: ${LANGUAGE}"
+echo "TASK: ${TASK}"
+echo "SEED: ${SEED}"
+echo "GPU: ${GPU}"
+echo "CANDIDATE: ${CANDIDATE}"
 
 export MODELPARAMS="'{\"model\": \"meta-llama/Llama-3.3-70B-Instruct\", \"guided_decoding_backend\": \"xgrammar\", \"max_model_len\": 1200, \"seed\": ${SEED}, \"tensor_parallel_size\": 2}'"
 export SAMPLINGPARAMS="'{\"seed\": ${SEED}, \"max_tokens\": 256}'"
