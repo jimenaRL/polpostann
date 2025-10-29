@@ -17,7 +17,7 @@ fi
 if [ ${GPU} = 'h100' ]; then
     export GRES=gpu:h100:1
 elif [ ${GPU} = 'a100' ]; then
-    export GRES=gpu:1
+    export GRES=gpu:4
 else
     export GRES=gpu:v100:1
 fi
