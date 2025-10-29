@@ -13,11 +13,11 @@ else
 fi
 
 if [ ${GPU} = 'h100' ]; then
-    export GRES=gpu:h100:1
+    export GRES=gpu:h100:2
 elif [ ${GPU} = 'a100' ]; then
-    export GRES=gpu:1
+    export GRES=gpu:2
 else
-    export GRES=gpu:v100:1
+    export GRES=gpu:v100:2
 fi
 
 echo "LANGUAGE: ${LANGUAGE}"
