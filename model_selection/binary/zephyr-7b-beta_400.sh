@@ -12,10 +12,19 @@ else
     export CHOICES="YES,NO"
 fi
 
+if [ ${GPU} = 'h100' ]; then
+    export GRES=gpu:h100:1
+elif [ ${GPU} = 'a100' ]; then
+    export GRES=gpu:1
+else
+    export GRES=gpu:v100:1
+fi
+
 echo "LANGUAGE: ${LANGUAGE}"
 echo "TASK: ${TASK}"
 echo "SEED: ${SEED}"
 echo "GPU: ${GPU}"
+echo "GRES: ${GRES}"
 echo "CANDIDATE: ${CANDIDATE}"
 
 
@@ -35,6 +44,6 @@ sbatch \
     --output=${OUTFOLDER}/%j.log  \
     --error=${OUTFOLDER}/%j.out  \
     --ntasks-per-node=1 \
-    --gres=gpu:h100:1 \
+    --gres=${GRES} \
     --export=ALL \
     ${SERVER}/annotate_tweets_${GPU}_${SERVER}.slurm
