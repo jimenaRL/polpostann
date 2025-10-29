@@ -231,10 +231,10 @@ def computeValidationMetrics(annotation):
     ground_truth = pd.read_csv(gt_file, dtype=str, keep_default_na=False, na_values=['NaN'])
     assert ground_truth.isna().sum().sum() == 0
 
-    annotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
-    assert annotations.isna().sum().sum() == 0
+    allannotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
+    assert allannotations.isna().sum().sum() == 0
 
-    annotations = annotations.merge(ground_truth, right_on=language, left_on='tweet', how='right')
+    annotations = allannotations.merge(ground_truth, right_on=language, left_on='tweet', how='right')
     assert len(annotations) == len(ground_truth)
 
     print(f"Using column {column} for ground truth")
