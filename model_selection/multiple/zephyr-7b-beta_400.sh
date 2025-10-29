@@ -1,7 +1,35 @@
+#!/bin/bash
+
 LANGUAGE=$1
 TASK=$2
 SEED=$3
 GPU=$4
+
+
+if [ ${LANGUAGE} = 'french' ]; then
+    export CHOICES="OUI,NON"
+elif [ ${LANGUAGE} = 'english' ]; then
+    export CHOICES="YES,NO"
+else
+  echo "Error: CHOICES variable is not french nor english"
+  exit 1
+fi
+
+if [ ${GPU} = 'h100' ]; then
+    export GRES=gpu:h100:1
+elif [ ${GPU} = 'a100' ]; then
+    export GRES=gpu:1
+else
+    export GRES=gpu:v100:1
+fi
+
+echo "TASK: ${TASK}"
+echo "LANGUAGE: ${LANGUAGE}"
+
+echo "CHOICES: ${CHOICES}"
+echo "SEED: ${SEED}"
+echo "GPU: ${GPU}"
+echo "GRES: ${GRES}"
 
 export MODELPARAMS="'{\"model\": \"HuggingFaceH4/zephyr-7b-beta\", \"guided_decoding_backend\": \"xgrammar\", \"seed\": ${SEED}, \"gpu_memory_utilization\": 0.9}'"
 export SAMPLINGPARAMS="'{\"temperature\": 0.7, \"top_p\": 0.95, \"top_k\": 50, \"max_tokens\": 16, \"repetition_penalty\": 1.2, \"seed\": ${SEED}}'"
@@ -20,6 +48,6 @@ sbatch \
     --output=${OUTFOLDER}/%j.log  \
     --error=${OUTFOLDER}/%j.out  \
     --ntasks-per-node=1 \
-    --gres=gpu:h100:1 \
+    --gres=${GRES} \
     --export=ALL \
     ${SERVER}/annotate_tweets_${GPU}_${SERVER}.slurm
