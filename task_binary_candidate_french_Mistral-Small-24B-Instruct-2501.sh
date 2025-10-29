@@ -1,10 +1,10 @@
 #!/bin/bash
 
 LANGUAGE=french    # french or english
-TASK=$2        # voteintention, support or criticism
-SEED=$3        # 1
-GPU=$4         # h100 or a100 over jeanzay, h100 or v100 over in2p3
-CANDIDATE=$5   # macron, melenchon or lepen
+TASK=$1        # voteintention, support or criticism
+SEED=$2        # 1
+GPU=$3        # h100 or a100 over jeanzay, h100 or v100 over in2p3
+CANDIDATE=$4   # macron, melenchon or lepen
 
 if [ ${LANGUAGE} = 'french' ]; then
     export CHOICES="OUI,NON"
