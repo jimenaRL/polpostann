@@ -11,39 +11,49 @@ from sklearn.metrics import \
     accuracy_score
 
 ANNOTATIONS = [
-    # multiclass annotations
+
+    # multiclass
     "voteintention/multiple/all",
     "support/multiple/all",
     "criticism/multiple/all",
-    # binary annotations
+
+    # binary criticism
     "criticism/binary/lepen",
     "criticism/binary/macron",
     "criticism/binary/melenchon",
+
+    # binary support
     "support/binary/lepen",
     "support/binary/macron",
     "support/binary/melenchon",
+
+    # binary voteintention
     "voteintention/binary/lepen",
     "voteintention/binary/macron",
     "voteintention/binary/melenchon",
 ]
 
 BASEPATH = "/home/jimena/work/dev/polpostann"
-GTFILE = os.path.join(BASEPATH, "ground_truth_v2_400.csv")
+DEFAULTGTFILE = os.path.join(BASEPATH, "ground_truth_v3_400.csv")
 
 ap = ArgumentParser()
 ap.add_argument('--version', type=str, default="v3ModelSelectionfrench")
+ap.add_argument('--gt_file', type=str, default=DEFAULTGTFILE)
 ap.add_argument('--annotation', type=str, default=ANNOTATIONS[0], choices=ANNOTATIONS)
+ap.add_argument('--server', type=str, default='in2p3')
 ap.add_argument('--doparsing', action='store_true')
 ap.add_argument('--language',type=str, default='french')
 ap.add_argument('--filename', type=str, default="llm_answer_0.csv")
 args = ap.parse_args()
 version = args.version
 annotation = args.annotation
+server = args.server
 filename = args.filename
 doparsing = args.doparsing
 language = args.language
+gt_file = args.gt_file
 
-OUTPUTSFOLDER = os.path.join(BASEPATH, "outputs_jeanzay", version)
+OUTPUTSFOLDER = os.path.join(BASEPATH, f"outputs_{server}", version)
 
 RESULTSFOLDER = os.path.join(BASEPATH, "results", version)
 os.makedirs(RESULTSFOLDER, exist_ok=True)
@@ -62,11 +72,16 @@ print("---------------------------------------------------------")
 print(f"PARAMETERS:\n{dumped_parameters[2:-2]}")
 print("---------------------------------------------------------")
 
-
+# hard core :S
+PATTERN = os.path.join(OUTPUTSFOLDER, "*", "guided", annotation, filename)
 MODELS =  [
-    os.path.split(model_path)[-1]
-    for model_path in glob(os.path.join(OUTPUTSFOLDER, "*"))
+    model_path.split("/")[8]
+    for model_path in glob(PATTERN)
 ]
+
+if len(MODELS) == 0:
+    print(f"Didn't find any result at pattern {PATTERN}")
+    exit()
 
 NBPARAMS = {
     "zephyr-7b-beta": 7,
@@ -97,14 +112,19 @@ def nbparams(name):
 
 CHOICES = {
     "multiple": ["Macron", "Mélenchon", "Le Pen", "None"],
-    "binary" : ["YES", "NO"]
+    "binary" : ["OUI", "NON"]
 }
 
 SUPPORTCHOICES = CHOICES
 
 DEFAULTANSWER = {
     "multiple": "None",
-    "binary" : "NO"
+    "binary" : "NON"
+}
+
+BINARYMAP = {
+    "french": {"YES": "OUI", "NO": "NON"},
+    "english": {"YES": "YES", "NO": "NO"},
 }
 
 NBDECIMALS = 2
@@ -198,7 +218,7 @@ def computeValidationMetrics(annotation):
     task = annotation.split('/')[0]
     column = f"{candidate.upper()} {task.upper()}"
 
-    # with open(GTFILE, 'r') as csvfile:
+    # with open(gt_file, 'r') as csvfile:
     #     reader = csv.DictReader(csvfile)
     #     gt = [r[column] for r in reader]
 
@@ -208,7 +228,7 @@ def computeValidationMetrics(annotation):
 
     # idxs = range(len(gt))
 
-    ground_truth = pd.read_csv(GTFILE, dtype=str, keep_default_na=False, na_values=['NaN'])
+    ground_truth = pd.read_csv(gt_file, dtype=str, keep_default_na=False, na_values=['NaN'])
     assert ground_truth.isna().sum().sum() == 0
 
     annotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
@@ -217,10 +237,12 @@ def computeValidationMetrics(annotation):
     annotations = annotations.merge(ground_truth, right_on=language, left_on='tweet', how='right')
     assert len(annotations) == len(ground_truth)
 
-    gt = ground_truth[column].tolist()
+    print(f"Using column {column} for ground truth")
 
     metrics = []
     for model in MODELS:
+
+        gt = ground_truth[column].tolist()
 
         model_abb = model.split('000_')[-1]
 
@@ -229,30 +251,47 @@ def computeValidationMetrics(annotation):
 
         # binary classification
         if setting == "binary":
+
+            # map gt answers to language (this is the same for english)
+            gt = [BINARYMAP[language][g] for g in gt]
+
+            P = [sum([a == SUPPORTCHOICES[setting][0] for a in ann])]
+            TP = [sum([g == SUPPORTCHOICES[setting][0] for g in gt])]
+
+            acc = accuracy_score(
+                y_true=gt,
+                y_pred=ann,
+                normalize=True)
+
             res = precision_recall_fscore_support(
                 y_true=gt,
                 y_pred=ann,
-                pos_label='YES',
+                pos_label='OUI',
                 average='binary',
                 zero_division=np.nan)
 
             res = list(res)
-            support =  sum([1 if _ == 'YES' else 0 for _ in gt])
+
 
             metrics.append({
                 "model": model_abb,
-                "kind": kind,
-                "params": NBPARAMS[model],
+                "family": family(model_abb),
+                "version": version,
+                "task": task,
+                "params": nbparams(model),
+                "TP": str(TP[0]),
+                "P": str(P[0]),
+                "accuracy": acc,
                 "precision": str(res[0])[:NBDECIMALS + 2],
                 "recall": str(res[1])[:NBDECIMALS + 2],
                 "f1_weighted": str(res[2])[:NBDECIMALS + 2],
-                "support": support,
-                "labels": ' | '.join(SUPPORTCHOICES[setting])
                 })
 
         # multiclass classification
         if setting == "multiple":
             # See: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_fscore_support.html
+
+            positives = [sum([a == l for a in ann]) for l in SUPPORTCHOICES['multiple']]
 
             acc = accuracy_score(
                 y_true=gt,
@@ -307,6 +346,7 @@ def computeValidationMetrics(annotation):
                 "task": task,
                 "params": nbparams(model),
                 "support": ' | '.join(map(str, res[3])),
+                "positives": ' | '.join(map(str, positives)),
                 "labels": ' | '.join(SUPPORTCHOICES[setting]),
                 "accuracy": acc,
                 "precision": ' | '.join([str(r)[:NBDECIMALS + 2] for r in res[0]]),
@@ -321,15 +361,21 @@ def computeValidationMetrics(annotation):
     df = pd.DataFrame.from_records(metrics).sort_values(by=["params"])
     path = os.path.join(METRICSFOLDER, f"{annotation.replace('/', '_')}.csv")
     df.to_csv(path, index=False)
-    # print(f"Metrics for annotation {annotation} experiment saved at {path}\n")
+    print(f"Metrics for annotation {annotation} experiment saved at {path}\n")
 
-    cmd = f"xan select model,params,labels,support,accuracy,f1_macro,f1_binary {path} | xan sort -s f1_macro | xan v"
-    # print(cmd)
-    os.system(cmd)
+    if setting == "binary":
+        cmd = f"xan v {path}"
+        os.system(cmd)
 
-    cmd = f"xan groupby family --along-cols params,accuracy,f1_macro 'mean(_)' {path} | xan map '\"{version}\" as cross_validation' | xan v"
-    # print(cmd)
-    os.system(cmd)
+    if setting == "multiple":
+        cmd = f"xan select model,labels,support,positives {path} | xan v"
+        os.system(cmd)
+
+        cmd = f"xan select model,precision,recall,accuracy,f1_binary,f1_macro {path} | xan sort -s f1_macro | xan v"
+        os.system(cmd)
+
+        cmd = f"xan groupby family --along-cols params,accuracy,f1_macro 'mean(_)' {path} | xan map '\"{version}\" as cross_validation' | xan v"
+        os.system(cmd)
 
 
 # parse and join results
