@@ -8,9 +8,13 @@ CANDIDATE=$5   # macron
 
 if [ ${LANGUAGE} = 'french' ]; then
     export CHOICES="OUI,NON"
-else
+elif [ ${LANGUAGE} = 'english' ]; then
     export CHOICES="YES,NO"
+else
+  echo "Error: CHOICES variable is not french nor english"
+  exit 1
 fi
+
 
 if [ ${GPU} = 'h100' ]; then
     export GRES=gpu:h100:4
