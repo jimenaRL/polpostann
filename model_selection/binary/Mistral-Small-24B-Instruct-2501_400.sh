@@ -20,12 +20,13 @@ else
     export GRES=gpu:v100:1
 fi
 
-echo "LANGUAGE: ${LANGUAGE}"
 echo "TASK: ${TASK}"
+echo "LANGUAGE: ${LANGUAGE}"
+echo "CANDIDATE: ${CANDIDATE}"
+echo "CHOICES: ${CHOICES}"
 echo "SEED: ${SEED}"
 echo "GPU: ${GPU}"
 echo "GRES: ${GRES}"
-echo "CANDIDATE: ${CANDIDATE}"
 
 export MODELPARAMS="'{\"model\": \"mistralai/Mistral-Small-24B-Instruct-2501\", \"tokenizer_mode\": \"mistral\", \"config_format\": \"mistral\", \"load_format\": \"mistral\", \"guided_decoding_backend\": \"xgrammar\", \"seed\": ${SEED}, \"tensor_parallel_size\": 1}'"
 export SAMPLINGPARAMS="'{\"temperature\": 0.15, \"seed\": ${SEED}, \"max_tokens\": 256}'"

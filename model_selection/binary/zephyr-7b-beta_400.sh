@@ -20,13 +20,13 @@ else
     export GRES=gpu:v100:1
 fi
 
-echo "LANGUAGE: ${LANGUAGE}"
 echo "TASK: ${TASK}"
+echo "LANGUAGE: ${LANGUAGE}"
+echo "CANDIDATE: ${CANDIDATE}"
+echo "CHOICES: ${CHOICES}"
 echo "SEED: ${SEED}"
 echo "GPU: ${GPU}"
 echo "GRES: ${GRES}"
-echo "CANDIDATE: ${CANDIDATE}"
-
 
 export MODELPARAMS="'{\"model\": \"HuggingFaceH4/zephyr-7b-beta\", \"guided_decoding_backend\": \"xgrammar\", \"seed\": ${SEED}, \"gpu_memory_utilization\": 0.9}'"
 export SAMPLINGPARAMS="'{\"temperature\": 0.7, \"top_p\": 0.95, \"top_k\": 50, \"max_tokens\": 16, \"repetition_penalty\": 1.2, \"seed\": ${SEED}}'"

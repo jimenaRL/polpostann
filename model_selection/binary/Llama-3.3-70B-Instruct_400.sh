@@ -20,12 +20,13 @@ else
     export GRES=gpu:v100:2
 fi
 
-echo "LANGUAGE: ${LANGUAGE}"
 echo "TASK: ${TASK}"
+echo "LANGUAGE: ${LANGUAGE}"
+echo "CANDIDATE: ${CANDIDATE}"
+echo "CHOICES: ${CHOICES}"
 echo "SEED: ${SEED}"
 echo "GPU: ${GPU}"
 echo "GRES: ${GRES}"
-echo "CANDIDATE: ${CANDIDATE}"
 
 export MODELPARAMS="'{\"model\": \"meta-llama/Llama-3.3-70B-Instruct\", \"guided_decoding_backend\": \"xgrammar\", \"max_model_len\": 1200, \"seed\": ${SEED}, \"tensor_parallel_size\": 2}'"
 export SAMPLINGPARAMS="'{\"seed\": ${SEED}, \"max_tokens\": 256}'"
