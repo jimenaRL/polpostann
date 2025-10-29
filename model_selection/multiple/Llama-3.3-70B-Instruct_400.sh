@@ -22,6 +22,8 @@ else
     export GRES=gpu:v100:2
 fi
 
+export CHOICES="'Macron,Mélenchon,LePen,None'"
+
 echo "TASK: ${TASK}"
 echo "LANGUAGE: ${LANGUAGE}"
 echo "CHOICES: ${CHOICES}"
@@ -37,7 +39,6 @@ export TWEETSFILE=${POLPOSTANNPATH}/400_balanced_sampled_xan_seed_999_fr_en.csv
 export TWEETSCOLUMN=${LANGUAGE}
 export SYSTEMPROMT=${POLPOSTANNPATH}/prompts/system/system_prompt_${LANGUAGE}.txt
 export USERPROMT=${POLPOSTANNPATH}/prompts/user/user_prompt_${TASK}_multiple_all_${LANGUAGE}.txt
-export CHOICES="'Macron,Mélenchon,LePen,None'"
 
 export OUTFOLDER=${POLPOSTANNPATH}/outputs_${SERVER}/v3ModelSelection${LANGUAGE}/${NAME}/guided/${TASK}/multiple/all
 

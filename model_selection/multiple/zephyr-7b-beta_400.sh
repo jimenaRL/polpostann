@@ -23,9 +23,10 @@ else
     export GRES=gpu:v100:1
 fi
 
+export CHOICES="'Macron,Mélenchon,LePen,None'"
+
 echo "TASK: ${TASK}"
 echo "LANGUAGE: ${LANGUAGE}"
-
 echo "CHOICES: ${CHOICES}"
 echo "SEED: ${SEED}"
 echo "GPU: ${GPU}"
