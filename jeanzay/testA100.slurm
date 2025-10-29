@@ -14,7 +14,7 @@
 #SBATCH --export=ALL
 
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1           # number of cores per task for gpu_p6 (1/4 of 4-GPUs H100 node)
 #SBATCH  --output=%j.log
 #SBATCH --error=%j.out
