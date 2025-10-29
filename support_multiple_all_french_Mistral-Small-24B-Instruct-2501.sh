@@ -33,7 +33,7 @@ echo "GRES: ${GRES}"
 
 export MODELPARAMS="'{\"model\": \"mistralai/Mistral-Small-24B-Instruct-2501\", \"tokenizer_mode\": \"mistral\", \"config_format\": \"mistral\", \"load_format\": \"mistral\", \"guided_decoding_backend\": \"xgrammar\", \"seed\": ${SEED}, \"tensor_parallel_size\": 1}'"
 export SAMPLINGPARAMS="'{\"temperature\": 0.15, \"seed\": ${SEED}, \"max_tokens\": 256}'"
-export NAME=Mistral-Large-Instruct-2411-seed${SEED}
+export NAME=Mistral-Small-24B-Instruct-2501-seed${SEED}
 
 export TWEETSFILE=${POLPOSTANNPATH}/enumerated_cleaned_text2annotate_2022-03-27_2022-04-25.csv
 export TWEETSCOLUMN=${LANGUAGE}
