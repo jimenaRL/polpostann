@@ -41,7 +41,7 @@ export SYSTEMPROMT=${POLPOSTANNPATH}/prompts/system/system_prompt_${LANGUAGE}.tx
 export USERPROMT=${POLPOSTANNPATH}/prompts/user/user_prompt_${TASK}_multiple_all_${LANGUAGE}.txt
 export CHOICES="'Macron,Mélenchon,LePen,None'"
 
-export OUTFOLDER=${POLPOSTANNPATH}/outputs_jeanzay/${LANGUAGE}/${NAME}/guided/${TASK}/multiple/all
+export OUTFOLDER=${POLPOSTANNPATH}/outputs_${SERVER}/${LANGUAGE}/${NAME}/guided/${TASK}/multiple/all
 
 sbatch \
     --job-name=${NAME} \
@@ -50,4 +50,4 @@ sbatch \
     --ntasks-per-node=1 \
     --gres=${GRES} \
     --export=ALL \
-    jeanzay/annotate_tweets_${GPU}_jeanzay.slurm
+    ${SERVER}/annotate_tweets_${GPU}_${SERVER}.slurm
