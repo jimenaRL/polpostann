@@ -111,19 +111,19 @@ def nbparams(name):
 
 
 CHOICES = {
-    "multiple": ["Macron", "Mélenchon", "Le Pen", "None"],
+    "multiple": ["Macron", "Mélenchon", "LePen", "None"],
     "binary" : ["OUI", "NON"]
 }
 
 SUPPORTCHOICES = CHOICES
 
 DEFAULTANSWER = {
-    "multiple": "None",
-    "binary" : "NON"
+    "french": {"multiple": "None", "binary" : "NON"},
+    "english": {"multiple": "None", "binary" : "NO"},
 }
 
 BINARYMAP = {
-    "french": {"YES": "OUI", "NO": "NON"},
+    "french": {"OUI": "YES", "NON": "NO"},
     "english": {"YES": "YES", "NO": "NO"},
 }
 
@@ -143,20 +143,18 @@ def parseAnwers(whole_answer, model, setting):
         .replace('"', "") \
         .replace(".", "") \
         .replace("·", "") \
-        .replace(",", "")
-
-    if "gpt-oss" in model:
-        whole_answer = whole_answer.split("assistantfinal")[-1]
+        .replace(",", "") \
+        .replace(" ", "")
 
     if setting == "binary":
         whole_answer = whole_answer.upper()
 
-    annotation = DEFAULTANSWER[setting]
+    parsed_annotation = DEFAULTANSWER[language][setting]
     for choice in CHOICES[setting]:
         if whole_answer[:len(choice)] == choice:
-            annotation = choice
+            parsed_annotation = choice
 
-    return annotation
+    return parsed_annotation
 
 def extract_data(model, annotation, df=None, columns=[]):
 
@@ -236,13 +234,17 @@ def computeValidationMetrics(annotation):
 
     annotations = allannotations.merge(ground_truth, right_on=language, left_on='tweet', how='right')
     assert len(annotations) == len(ground_truth)
+    if annotations.isna().sum().sum() > 1:
+        raise ValueError(f"There are NAN annotations:{annotations}")
 
     print(f"Using column {column} for ground truth")
 
     metrics = []
     for model in MODELS:
 
-        gt = ground_truth[column].tolist()
+        # gt = ground_truth[column].tolist()
+        # normalize ground true annotations (e.g.: LePen vs Le Pen)
+        gt = [parseAnwers(g, model, setting) for g in ground_truth[column].tolist()]
 
         model_abb = model.split('000_')[-1]
 
@@ -345,8 +347,8 @@ def computeValidationMetrics(annotation):
                 "version": version,
                 "task": task,
                 "params": nbparams(model),
-                "support": ' | '.join(map(str, res[3])),
-                "positives": ' | '.join(map(str, positives)),
+                "TP": ' | '.join(map(str, res[3])),
+                "P": ' | '.join(map(str, positives)),
                 "labels": ' | '.join(SUPPORTCHOICES[setting]),
                 "accuracy": acc,
                 "precision": ' | '.join([str(r)[:NBDECIMALS + 2] for r in res[0]]),
@@ -364,19 +366,18 @@ def computeValidationMetrics(annotation):
     print(f"Metrics for annotation {annotation} experiment saved at {path}\n")
 
     if setting == "binary":
-        cmd = f"xan v {path}"
+        cmd = f"xan v -I {path}"
         os.system(cmd)
 
     if setting == "multiple":
-        cmd = f"xan select model,labels,support,positives {path} | xan v"
+        cmd = f"xan select model,labels,TP,P {path} | xan sort -R -s model | xan v -I"
         os.system(cmd)
 
-        cmd = f"xan select model,precision,recall,accuracy,f1_binary,f1_macro {path} | xan sort -s f1_macro | xan v"
+        cmd = f"xan select model,precision,recall,accuracy,f1_binary,f1_macro,f1_micro {path} | xan sort -R -s model | xan v -I"
         os.system(cmd)
 
-        cmd = f"xan groupby family --along-cols params,accuracy,f1_macro 'mean(_)' {path} | xan map '\"{version}\" as cross_validation' | xan v"
+        cmd = f"xan groupby family --along-cols accuracy,f1_macro 'mean(_)' {path} | xan map '\"{version}\" as cross_validation' | xan sort -R -s family | xan v -I -S 4"
         os.system(cmd)
-
 
 # parse and join results
 if doparsing:
