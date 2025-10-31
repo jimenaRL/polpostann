@@ -130,8 +130,7 @@ NBDECIMALS = 2
 SETTINGS = ["binary", "multiple"]
 
 def parseAnwers(whole_answer, model, setting):
-
-    return whole_answer
+    return whole_answer.replace(" ", "")
 
 def extract_data(model, annotation, df=None, columns=[]):
 
@@ -223,6 +222,7 @@ def computeValidationMetrics(annotation):
 
         if annotations[model].isna().sum() > 0:
             print(f"Removing NAN annotations:{annotations[annotations[model].isna()]}")
+
         model_ann = annotations[model][~annotations[model].isna()]
         gt_model = ground_truth[~annotations[model].isna()]
 
@@ -239,8 +239,6 @@ def computeValidationMetrics(annotation):
 
             P = [sum([a == SUPPORTCHOICES[setting][0] for a in ann])]
             TP = [sum([g == SUPPORTCHOICES[setting][0] for g in gt])]
-
-            import pdb; pdb.set_trace()  # breakpoint b34c0c3a //
 
             acc = accuracy_score(
                 y_true=gt,
