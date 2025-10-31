@@ -35,10 +35,12 @@ ANNOTATIONS = [
 
 BASEPATH = "/home/jimena/work/dev/polpostann"
 DEFAULTGTFILE = os.path.join(BASEPATH, "ground_truth_v3_400.csv")
+DEFAULTGTINDEX = "idx_all"
 
 ap = ArgumentParser()
 ap.add_argument('--version', type=str, default="v3ModelSelectionfrench")
 ap.add_argument('--gt_file', type=str, default=DEFAULTGTFILE)
+ap.add_argument('--gt_index', type=str, default=DEFAULTGTINDEX)
 ap.add_argument('--annotation', type=str, default=ANNOTATIONS[0], choices=ANNOTATIONS)
 ap.add_argument('--server', type=str, default='in2p3')
 ap.add_argument('--doparsing', action='store_true')
@@ -52,6 +54,7 @@ filename = args.filename
 doparsing = args.doparsing
 language = args.language
 gt_file = args.gt_file
+gt_index = args.gt_index
 
 OUTPUTSFOLDER = os.path.join(BASEPATH, f"outputs_{server}", version)
 
@@ -117,13 +120,8 @@ CHOICES = {
 
 SUPPORTCHOICES = CHOICES
 
-DEFAULTANSWER = {
-    "french": {"multiple": "None", "binary" : "NON"},
-    "english": {"multiple": "None", "binary" : "NO"},
-}
-
 BINARYMAP = {
-    "french": {"OUI": "YES", "NON": "NO"},
+    "french": {"YES": "OUI", "NO": "NON"},
     "english": {"YES": "YES", "NO": "NO"},
 }
 
@@ -133,28 +131,7 @@ SETTINGS = ["binary", "multiple"]
 
 def parseAnwers(whole_answer, model, setting):
 
-    whole_answer = whole_answer \
-        .strip() \
-        .split('\n')[0] \
-        .replace("(", "") \
-        .replace(")", "") \
-        .replace(":", "") \
-        .replace("'", "") \
-        .replace('"', "") \
-        .replace(".", "") \
-        .replace("·", "") \
-        .replace(",", "") \
-        .replace(" ", "")
-
-    if setting == "binary":
-        whole_answer = whole_answer.upper()
-
-    parsed_annotation = DEFAULTANSWER[language][setting]
-    for choice in CHOICES[setting]:
-        if whole_answer[:len(choice)] == choice:
-            parsed_annotation = choice
-
-    return parsed_annotation
+    return whole_answer
 
 def extract_data(model, annotation, df=None, columns=[]):
 
@@ -232,33 +209,38 @@ def computeValidationMetrics(annotation):
     allannotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
     assert allannotations.isna().sum().sum() == 0
 
-    annotations = allannotations.merge(ground_truth, right_on=language, left_on='tweet', how='right')
+    annotations = ground_truth.merge(allannotations, left_on=gt_index, right_on='idx', how='left')
     assert len(annotations) == len(ground_truth)
-    if annotations.isna().sum().sum() > 1:
-        raise ValueError(f"There are NAN annotations:{annotations}")
+    if annotations['idx_all'].isna().sum() > 0:
+        raise ValueError(f"There are NAN indexes:{annotations[annotations['idx_all'].isna()]}")
 
     print(f"Using column {column} for ground truth")
 
     metrics = []
     for model in MODELS:
 
-        # gt = ground_truth[column].tolist()
-        # normalize ground true annotations (e.g.: LePen vs Le Pen)
-        gt = [parseAnwers(g, model, setting) for g in ground_truth[column].tolist()]
-
         model_abb = model.split('000_')[-1]
 
-        # ann = [a[model] for a in annotations]
-        ann = annotations[model].tolist()
+        if annotations[model].isna().sum() > 0:
+            print(f"Removing NAN annotations:{annotations[annotations[model].isna()]}")
+        model_ann = annotations[model][~annotations[model].isna()]
+        gt_model = ground_truth[~annotations[model].isna()]
+
+        ann = [parseAnwers(a, model, setting) for a in model_ann.tolist()]
+
+        gt = [parseAnwers(g, model, setting) for g in gt_model[column].tolist()]
 
         # binary classification
         if setting == "binary":
 
             # map gt answers to language (this is the same for english)
+
             gt = [BINARYMAP[language][g] for g in gt]
 
             P = [sum([a == SUPPORTCHOICES[setting][0] for a in ann])]
             TP = [sum([g == SUPPORTCHOICES[setting][0] for g in gt])]
+
+            import pdb; pdb.set_trace()  # breakpoint b34c0c3a //
 
             acc = accuracy_score(
                 y_true=gt,
