@@ -162,6 +162,9 @@ def extract_data(model, annotation, df=None, columns=[]):
 
     return df, columns
 
+def getPath(annotation):
+    return os.path.join(RESULTSFOLDER, f"{annotation.replace('/', '_')}.csv")
+
 def parseAndJoin(annotation):
 
     setting = annotation.split('/')[1]
@@ -172,13 +175,7 @@ def parseAndJoin(annotation):
     for model in MODELS:
         df, columns = extract_data(model, annotation, df, columns)
 
-    # df = df.assign(guidedMayorityVote=df[df.columns[2:]].mode(axis=1)[0])
-    # df = df.rename(columns={
-    #     'guidedMayorityVote':"mayorityVote",
-    #     })
-    # columns.append("mayorityVote")
-
-    path = os.path.join(RESULTSFOLDER, f"{annotation.replace('/', '_')}.csv")
+    path = getPath(annotation)
 
     df[columns].to_csv(path, index=False)
 
@@ -187,23 +184,17 @@ def parseAndJoin(annotation):
 
 
 def computeValidationMetrics(annotation):
-    file = os.path.join(RESULTSFOLDER, f"{annotation.replace('/', '_')}.csv")
+
+    file = getPath(annotation)
+
     candidate = annotation.split('/')[-1]
     setting = annotation.split('/')[1]
     task = annotation.split('/')[0]
     column = f"{candidate.upper()} {task.upper()}"
-
-    # with open(gt_file, 'r') as csvfile:
-    #     reader = csv.DictReader(csvfile)
-    #     gt = [r[column] for r in reader]
-
-    # with open(file, 'r') as csvfile:
-    #     reader = csv.DictReader(csvfile)
-    #     annotations = [r for r in reader]
-
-    # idxs = range(len(gt))
+    print(f"Using column {column} for ground truth")
 
     ground_truth = pd.read_csv(gt_file, dtype=str, keep_default_na=False, na_values=['NaN'])
+    ground_truth = ground_truth[["idx_all", "idx", "english", "french", column]]
     assert ground_truth.isna().sum().sum() == 0
 
     allannotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
@@ -214,7 +205,9 @@ def computeValidationMetrics(annotation):
     if annotations['idx_all'].isna().sum() > 0:
         raise ValueError(f"There are NAN indexes:{annotations[annotations['idx_all'].isna()]}")
 
-    print(f"Using column {column} for ground truth")
+    gtpath = os.path.join(RESULTSFOLDER, f"{annotation.replace('/', '_')}_with_ground_truth.csv")
+    annotations.to_csv(gtpath, index=False)
+    print(f"Results for annotation with ground_truth saved at {gtpath}")
 
     metrics = []
     for model in MODELS:
