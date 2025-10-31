@@ -151,6 +151,7 @@ def extract_data(model, annotation, df=None, columns=[]):
         .rename(columns={"answer": colname})
 
     df_guided[colname] = df_guided[colname].apply(lambda a: parseAnwers(a, model, setting))
+    print(f"Answers loaded from {path_guided}")
 
     if df is not None:
         df = df.merge(df_guided, on=['idx', 'tweet'])
