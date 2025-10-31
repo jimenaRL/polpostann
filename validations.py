@@ -34,7 +34,7 @@ ANNOTATIONS = [
 ]
 
 BASEPATH = "/home/jimena/work/dev/polpostann"
-DEFAULTGTFILE = os.path.join(BASEPATH, "ground_truth_v3_400.csv")
+DEFAULTGTFILE = os.path.join(BASEPATH, "ground_truth_v4_400.csv")
 DEFAULTGTINDEX = "idx_all"
 
 ap = ArgumentParser()
@@ -129,7 +129,7 @@ NBDECIMALS = 2
 
 SETTINGS = ["binary", "multiple"]
 
-def parseAnwers(whole_answer, model, setting):
+def parseAnwers(whole_answer):
     return whole_answer.replace(" ", "")
 
 def extract_data(model, annotation, df=None, columns=[]):
@@ -150,7 +150,7 @@ def extract_data(model, annotation, df=None, columns=[]):
         .fillna("None") \
         .rename(columns={"answer": colname})
 
-    df_guided[colname] = df_guided[colname].apply(lambda a: parseAnwers(a, model, setting))
+    df_guided[colname] = df_guided[colname].apply(lambda a: parseAnwers(a))
     print(f"Answers loaded from {path_guided}")
 
     if df is not None:
@@ -195,6 +195,7 @@ def computeValidationMetrics(annotation):
 
     ground_truth = pd.read_csv(gt_file, dtype=str, keep_default_na=False, na_values=['NaN'])
     ground_truth = ground_truth[["idx_all", "idx", "english", "french", column]]
+    ground_truth[column] = ground_truth[column].apply(lambda a: parseAnwers(a))
     assert ground_truth.isna().sum().sum() == 0
 
     allannotations = pd.read_csv(file, dtype=str,  keep_default_na=False, na_values=['NaN'])
@@ -202,6 +203,10 @@ def computeValidationMetrics(annotation):
 
     annotations = ground_truth.merge(allannotations, left_on=gt_index, right_on='idx', how='left')
     assert len(annotations) == len(ground_truth)
+
+    for model in MODELS:
+        annotations[column] = annotations[column].apply(lambda a: parseAnwers(a))
+
     if annotations['idx_all'].isna().sum() > 0:
         raise ValueError(f"There are NAN indexes:{annotations[annotations['idx_all'].isna()]}")
 
@@ -217,12 +222,8 @@ def computeValidationMetrics(annotation):
         if annotations[model].isna().sum() > 0:
             print(f"Removing NAN annotations:{annotations[annotations[model].isna()]}")
 
-        model_ann = annotations[model][~annotations[model].isna()]
-        gt_model = ground_truth[~annotations[model].isna()]
-
-        ann = [parseAnwers(a, model, setting) for a in model_ann.tolist()]
-
-        gt = [parseAnwers(g, model, setting) for g in gt_model[column].tolist()]
+        ann = annotations[model][~annotations[model].isna()].tolist()
+        gt = ground_truth[~annotations[model].isna()][column].tolist()
 
         # binary classification
         if setting == "binary":
