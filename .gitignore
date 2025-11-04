@@ -1,11 +1,13 @@
+translations
 outputs
 *.csv
 .python-version
 *.log
 *.out
 .ipynb_checkpoints
-RUNNING_IN2P3.sh
-RUNNING_JEANZAY.sh
+RUNNING_IN2P3.txt
+RUNNING_JEANZAY.txt
+notes.txt
 outputs_jeanzay_v3
 outputs_jeanzay
 outputs_in2p3
