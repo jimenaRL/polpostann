@@ -118,7 +118,16 @@ CHOICES = {
     "binary" : ["OUI", "NON"]
 }
 
-SUPPORTCHOICES = CHOICES
+SUPPORTCHOICES = {
+    "french": {
+        "multiple": ["Macron", "Mélenchon", "LePen", "None"],
+        "binary" : ["OUI", "NON"]
+    },
+    "english": {
+        "multiple": ["Macron", "Mélenchon", "LePen", "None"],
+        "binary" : ["YES", "NO"]
+    },
+}
 
 BINARYPOSLABEL = {
     "french": "OUI",
@@ -237,8 +246,8 @@ def computeValidationMetrics(annotation):
             # map gt answers to language (this is the same for english)
             gt = [BINARYMAP[language][g] for g in gt]
 
-            P = [sum([a == SUPPORTCHOICES[setting][0] for a in ann])]
-            TP = [sum([g == SUPPORTCHOICES[setting][0] for g in gt])]
+            P = [sum([a == SUPPORTCHOICES[language][setting][0] for a in ann])]
+            TP = [sum([g == SUPPORTCHOICES[language][setting][0] for g in gt])]
 
             acc = accuracy_score(
                 y_true=gt,
@@ -273,7 +282,7 @@ def computeValidationMetrics(annotation):
         if setting == "multiple":
             # See: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_fscore_support.html
 
-            positives = [sum([a == l for a in ann]) for l in SUPPORTCHOICES['multiple']]
+            positives = [sum([a == l for a in ann]) for l in SUPPORTCHOICES[language]['multiple']]
 
             acc = accuracy_score(
                 y_true=gt,
@@ -285,7 +294,7 @@ def computeValidationMetrics(annotation):
             res = precision_recall_fscore_support(
                 y_true=gt,
                 y_pred=ann,
-                labels=SUPPORTCHOICES['multiple'],
+                labels=SUPPORTCHOICES[language]['multiple'],
                 average=None,
                 zero_division=np.nan)
 
@@ -295,7 +304,7 @@ def computeValidationMetrics(annotation):
             f1_macro = precision_recall_fscore_support(
                 y_true=gt,
                 y_pred=ann,
-                labels=SUPPORTCHOICES['multiple'],
+                labels=SUPPORTCHOICES[language]['multiple'],
                 average='macro',
                 zero_division=np.nan)[2]
 
@@ -305,7 +314,7 @@ def computeValidationMetrics(annotation):
             f1_micro = precision_recall_fscore_support(
                 y_true=gt,
                 y_pred=ann,
-                labels=SUPPORTCHOICES['multiple'],
+                labels=SUPPORTCHOICES[language]['multiple'],
                 average='micro',
                 zero_division=np.nan)[2]
 
@@ -317,7 +326,7 @@ def computeValidationMetrics(annotation):
             f1_weighted = precision_recall_fscore_support(
                 y_true=gt,
                 y_pred=ann,
-                labels=SUPPORTCHOICES['multiple'],
+                labels=SUPPORTCHOICES[language]['multiple'],
                 average='weighted',
                 zero_division=np.nan)[2]
 
@@ -329,7 +338,7 @@ def computeValidationMetrics(annotation):
                 "params": nbparams(model),
                 "TP": ' | '.join(map(str, res[3])),
                 "P": ' | '.join(map(str, positives)),
-                "labels": ' | '.join(SUPPORTCHOICES[setting]),
+                "labels": ' | '.join(SUPPORTCHOICES[language][setting]),
                 "accuracy": acc,
                 "precision": ' | '.join([str(r)[:NBDECIMALS + 2] for r in res[0]]),
                 "recall": ' | '.join([str(r)[:NBDECIMALS + 2] for r in res[1]]),
