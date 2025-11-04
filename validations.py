@@ -120,6 +120,11 @@ CHOICES = {
 
 SUPPORTCHOICES = CHOICES
 
+BINARYPOSLABEL = {
+    "french": "OUI",
+    "english": "YES",
+}
+
 BINARYMAP = {
     "french": {"YES": "OUI", "NO": "NON"},
     "english": {"YES": "YES", "NO": "NO"},
@@ -211,6 +216,7 @@ def computeValidationMetrics(annotation):
         raise ValueError(f"There are NAN indexes:{annotations[annotations['idx_all'].isna()]}")
 
     gtpath = os.path.join(RESULTSFOLDER, f"{annotation.replace('/', '_')}_with_ground_truth.csv")
+    annotations.drop(columns=["tweet"], inplace=True)
     annotations.to_csv(gtpath, index=False)
     print(f"Results for annotation with ground_truth saved at {gtpath}")
 
@@ -229,7 +235,6 @@ def computeValidationMetrics(annotation):
         if setting == "binary":
 
             # map gt answers to language (this is the same for english)
-
             gt = [BINARYMAP[language][g] for g in gt]
 
             P = [sum([a == SUPPORTCHOICES[setting][0] for a in ann])]
@@ -243,7 +248,7 @@ def computeValidationMetrics(annotation):
             res = precision_recall_fscore_support(
                 y_true=gt,
                 y_pred=ann,
-                pos_label='OUI',
+                pos_label=BINARYPOSLABEL[language],
                 average='binary',
                 zero_division=np.nan)
 
@@ -261,7 +266,7 @@ def computeValidationMetrics(annotation):
                 "accuracy": acc,
                 "precision": str(res[0])[:NBDECIMALS + 2],
                 "recall": str(res[1])[:NBDECIMALS + 2],
-                "f1_weighted": str(res[2])[:NBDECIMALS + 2],
+                "f1": str(res[2])[:NBDECIMALS + 2],
                 })
 
         # multiclass classification
@@ -341,7 +346,7 @@ def computeValidationMetrics(annotation):
     print(f"Metrics for annotation {annotation} experiment saved at {path}\n")
 
     if setting == "binary":
-        cmd = f"xan v -I {path}"
+        cmd = f"xan select model,version,TP,P,precision,recall,accuracy,f1 {path} | xan v -I"
         os.system(cmd)
 
     if setting == "multiple":
