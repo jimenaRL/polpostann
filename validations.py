@@ -34,7 +34,7 @@ ANNOTATIONS = [
 ]
 
 BASEPATH = "/home/jimena/work/dev/polpostann"
-DEFAULTGTFILE = os.path.join(BASEPATH, "ground_truth_v4_400.csv")
+DEFAULTGTFILE = os.path.join(BASEPATH, "ground_truth", "ground_truth_v4_400.csv")
 DEFAULTGTINDEX = "idx_all"
 
 ap = ArgumentParser()
