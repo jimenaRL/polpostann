@@ -47,7 +47,7 @@ echo $(which python)
 # show gpus availables
 nvidia-smi
 
-cmd="python /lustre/fswork/projects/rech/nmf/umu89ib/dev/polpostann/async_translations.py --nbgpus=1"
+cmd="python /lustre/fswork/projects/rech/nmf/umu89ib/dev/polpostann/async_translations.py --nbgpus=1 --reverse_batch_order"
 
 echo "[RUNNING] ${cmd}"
 eval "$cmd"
