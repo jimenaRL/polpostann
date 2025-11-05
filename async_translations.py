@@ -32,7 +32,7 @@ results_folder = args.results_folder
 batch_size = args.batch_size
 
 # Load tweets
- with open(tweets_file, 'r') as f:
+with open(tweets_file, 'r') as f:
     reader = csv.reader(f)
     tweets = [[n, l[0]] for n, l in enumerate(reader)]
 
