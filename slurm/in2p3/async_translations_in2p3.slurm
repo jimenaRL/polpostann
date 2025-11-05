@@ -2,11 +2,11 @@
 
 # SLURM options:
 
-#SBATCH --job-name=2gpuasynctranstions # Nom du job
+#SBATCH --job-name=1H100trans # Nom du job
 #SBATCH --output=/sps/humanum/user/jroyolet/dev/llmBenchmarks/tweetsOffilineMultiGPU/translations/mistralai_Mistral-7B-Instruct-v0.2/%j.log # log file path
 
 #SBATCH --partition=gpu               # Choix de partition
-#SBATCH --gres=gpu:h100:2
+#SBATCH --gres=gpu:h100:1
 
 #SBATCH --ntasks=1                    # Exécuter une seule tâche
 #SBATCH --mem=128G                    # Mémoire en MB par défaut
@@ -30,11 +30,8 @@ echo $(pip --version)
 echo ""
 nvidia-smi
 
-LIMIT=$1
-LIMIT=$1
 
-# Get args
-cmd="python async_translations.py --nbgpus=2 --limit=${LIMIT}"
+cmd="python /sps/humanum/user/jroyolet/dev/polpostann/async_translations.py --nbgpus=1"
 
 echo "[RUNNING] ${cmd}"
 eval "$cmd"
