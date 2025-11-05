@@ -7,28 +7,39 @@ from argparse import ArgumentParser
 
 from openai import OpenAI
 
+BASEPATH = ""
+if "SERVER" in os.environ:
+    if os.environ["SERVER"] == "jeanzay":
+        BASEPATH =  "/lustre/fswork/projects/rech/nmf/umu89ib/dev/polpostann"
+    if os.environ["SERVER"] == "in2p3":
+        BASEPATH =  "/sps/humanum/user/jroyolet/dev/polpostann"
+
+DEFAULTRESFOLDER = os.path.join(BASEPATH, 'translations/mistralai_Mistral-7B-Instruct-v0.2')
+DEFAULTTWEETSFILE = os.path.join(BASEPATH, 'cleaned_text2annotate_2022-03-27_2022-04-25.csv')
+
 ap = ArgumentParser()
 ap.add_argument('--limit', type=int, default=-1)
+ap.add_argument('--results_folder', type=str, default=DEFAULTRESFOLDER)
+ap.add_argument('--tweets_file', type=str, default=DEFAULTTWEETSFILE)
 ap.add_argument('--nbgpus', type=int, default=1)
+ap.add_argument('--reverse_batch_order',  action='store_true')
 ap.add_argument('--batch_size', type=int, default=10000)
-ap.add_argument('--batch_idx_start', type=int, default=0)
 
 args = ap.parse_args()
 limit = args.limit
 nbgpus = args.nbgpus
+tweets_file = args.tweets_file
+reverse_batch_order = args.reverse_batch_order
+results_folder = args.results_folder
 batch_size = args.batch_size
-batch_idx_start = args.batch_idx_start
-
-results_folder = "/sps/humanum/user/jroyolet/dev/llmBenchmarks/tweetsOffilineMultiGPU/translations/mistralai_Mistral-7B-Instruct-v0.2"
 
 # Load tweets
-file = "/sps/humanum/user/jroyolet/dev/llmBenchmarks/tweetsOffilineMultiGPU/cleaned_text2annotate_2022-03-27_2022-04-25.csv"
-with open(file, 'r') as f:
+ with open(tweets_file, 'r') as f:
     reader = csv.reader(f)
     tweets = [[n, l[0]] for n, l in enumerate(reader)][:limit]
 
 # Run vllm server
-vllm_serve_command = f'vllm serve "mistralai/Mistral-7B-Instruct-v0.2" --disable-log-requests --disable-log-stats --tensor-parallel-size {nbgpus} &'
+vllm_serve_command = f'vllm serve "mistralai/Mistral-7B-Instruct-v0.2" --tensor-parallel-size {nbgpus} &'
 print(f"[RUNNING] {vllm_serve_command}")
 os.system(vllm_serve_command)
 
@@ -77,10 +88,11 @@ batchl[-1][1] = min(data_length,  batchl[-1][1])
 
 headers = ["idx","fr", "en"]
 
-for batch_idx, b in enumerate(batchl):
+enumbatchl = list(enumerate(batchl))
+if reverse_batch_order:
+    enumbatchl.reverse()
 
-        if batch_idx < batch_idx_start:
-            continue
+for batch_idx, b in enumbatchl:
 
         file = os.path.join(results_folder, f"translations_{batch_idx}.csv")
         lockfile = file + ".lock"
