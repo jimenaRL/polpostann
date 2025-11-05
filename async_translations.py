@@ -18,7 +18,6 @@ DEFAULTRESFOLDER = os.path.join(BASEPATH, 'translations/mistralai_Mistral-7B-Ins
 DEFAULTTWEETSFILE = os.path.join(BASEPATH, 'cleaned_text2annotate_2022-03-27_2022-04-25.csv')
 
 ap = ArgumentParser()
-ap.add_argument('--limit', type=int, default=-1)
 ap.add_argument('--results_folder', type=str, default=DEFAULTRESFOLDER)
 ap.add_argument('--tweets_file', type=str, default=DEFAULTTWEETSFILE)
 ap.add_argument('--nbgpus', type=int, default=1)
@@ -26,7 +25,6 @@ ap.add_argument('--reverse_batch_order',  action='store_true')
 ap.add_argument('--batch_size', type=int, default=10000)
 
 args = ap.parse_args()
-limit = args.limit
 nbgpus = args.nbgpus
 tweets_file = args.tweets_file
 reverse_batch_order = args.reverse_batch_order
@@ -36,7 +34,7 @@ batch_size = args.batch_size
 # Load tweets
  with open(tweets_file, 'r') as f:
     reader = csv.reader(f)
-    tweets = [[n, l[0]] for n, l in enumerate(reader)][:limit]
+    tweets = [[n, l[0]] for n, l in enumerate(reader)]
 
 # Run vllm server
 vllm_serve_command = f'vllm serve "mistralai/Mistral-7B-Instruct-v0.2" --tensor-parallel-size {nbgpus} &'
