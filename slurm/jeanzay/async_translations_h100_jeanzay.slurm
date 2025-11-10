@@ -4,9 +4,9 @@
 
 #SBATCH -C h100                      # set gpu_p6 partition (80GB H100 GPU)
 
-#SBATCH --job-name=1H100trans # Nom du job
-#SBATCH --output=/lustre/fswork/projects/rech/nmf/umu89ib/dev/polpostann/translations/mistralai_Mistral-7B-Instruct-v0.2/%j.log # log file path
-#SBATCH --error=/lustre/fswork/projects/rech/nmf/umu89ib/dev/polpostann/translations/mistralai_Mistral-7B-Instruct-v0.2/%j.out # log file path
+#SBATCH --job-name=1xHtrans # Nom du job
+#SBATCH --output=/lustre/fswork/projects/rech/nmf/umu89ib/dev/polpostann/translations_v2/mistralai_Mistral-7B-Instruct-v0.2/%j.log # log file path
+#SBATCH --error=/lustre/fswork/projects/rech/nmf/umu89ib/dev/polpostann/translations_v2/mistralai_Mistral-7B-Instruct-v0.2/%j.out # log file path
 
 #SBATCH --gres=gpu:h100:1
 #SBATCH --ntasks-per-node=1          # number of nodes
