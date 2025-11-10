@@ -16,7 +16,7 @@ if "SERVER" in os.environ:
         BASEPATH =  "/sps/humanum/user/jroyolet/dev/polpostann"
 
 DEFAULTRESFOLDER = os.path.join(BASEPATH, 'translations_v2/mistralai_Mistral-7B-Instruct-v0.2')
-DEFAULTINPUTSFILE = os.path.join(BASEPATH, 'cleaned_text2annotate_2022-03-27_2022-04-25.csv')
+DEFAULTINPUTSFILE = os.path.join(BASEPATH, 'enumerated_cleaned_text2annotate_2022-03-27_2022-04-25.csv')
 DEFAULTMODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 DEFAULTINSTRUCTIONS = "Please translate the following text from French to English. Do not provide any explanation or note. Do not produce anything other than a literal translation."
 DEFAULTCOLUMNS = "idx_all,french"
