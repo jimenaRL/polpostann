@@ -1,5 +1,6 @@
 import os
 import csv
+import json
 import time
 import asyncio
 import numpy as np
@@ -15,29 +16,51 @@ if "SERVER" in os.environ:
         BASEPATH =  "/sps/humanum/user/jroyolet/dev/polpostann"
 
 DEFAULTRESFOLDER = os.path.join(BASEPATH, 'translations/mistralai_Mistral-7B-Instruct-v0.2')
-DEFAULTTWEETSFILE = os.path.join(BASEPATH, 'cleaned_text2annotate_2022-03-27_2022-04-25.csv')
+DEFAULTINPUTSFILE = os.path.join(BASEPATH, 'cleaned_text2annotate_2022-03-27_2022-04-25.csv')
+DEFAULTMODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+DEFAULTINSTRUCTIONS = "Please translate the following text from French to English. Do not provide any explanation or note. Do not produce anything other than a literal translation."
+DEFAULTCOLUMNS = "idx,idx_all,french"
+DEFAULTCONTENTCOLUMN = "french"
+DEFAULTBATCHSIZE = 10000
 
 ap = ArgumentParser()
+ap.add_argument('--model', type=str, default=DEFAULTMODEL)
+ap.add_argument('--instructions', type=str, default=DEFAULTINSTRUCTIONS)
 ap.add_argument('--results_folder', type=str, default=DEFAULTRESFOLDER)
-ap.add_argument('--tweets_file', type=str, default=DEFAULTTWEETSFILE)
-ap.add_argument('--nbgpus', type=int, default=1)
+ap.add_argument('--input_file', type=str, default=DEFAULTINPUTSFILE)
+ap.add_argument('--content_column', type=str, default=DEFAULTCONTENTCOLUMN)
+ap.add_argument('--columns_to_keep', type=str, default=DEFAULTCOLUMNS)
+ap.add_argument('--batch_size', type=int, default=DEFAULTBATCHSIZE)
 ap.add_argument('--reverse_batch_order',  action='store_true')
-ap.add_argument('--batch_size', type=int, default=10000)
+ap.add_argument('--nbgpus', type=int, default=1)
 
 args = ap.parse_args()
+model = args.model
+instructions = args.instructions
 nbgpus = args.nbgpus
-tweets_file = args.tweets_file
+input_file = args.input_file
+content_column = args.content_column
+columns_to_keep = args.columns_to_keep.split(",")
 reverse_batch_order = args.reverse_batch_order
 results_folder = args.results_folder
 batch_size = args.batch_size
 
-# Load tweets
-with open(tweets_file, 'r') as f:
+parameters = vars(args)
+dumped_parameters = json.dumps(parameters, sort_keys=True, indent=4)
+print("---------------------------------------------------------")
+print(f"PARAMETERS:\n{dumped_parameters[2:-2]}")
+print("---------------------------------------------------------")
+
+if not content_column in columns_to_keep:
+    columns_to_keep.append(content_column)
+
+# Load inputs
+with open(input_file, 'r') as f:
     reader = csv.reader(f)
-    tweets = [[n, l[0]] for n, l in enumerate(reader)]
+    inputs = [{c: d[c] for c in columns_to_keep} for d in csv.DictReader(f)]
 
 # Run vllm server
-vllm_serve_command = f'vllm serve "mistralai/Mistral-7B-Instruct-v0.2" --tensor-parallel-size {nbgpus} &'
+vllm_serve_command = f'vllm serve "{model}" --tensor-parallel-size {nbgpus} &'
 print(f"[RUNNING] {vllm_serve_command}")
 os.system(vllm_serve_command)
 
@@ -56,35 +79,37 @@ while not model:
 print(f"Model is ready: {model} !")
 
 
-async def doCompletetion(tweet):
+async def doCompletetion(input_):
+    # make request
     res = client.responses.create(
-        model="mistralai/Mistral-7B-Instruct-v0.2",
-        instructions="Please translate the following text from french to english.",
-        input=tweet[1])
-    return tweet[0], tweet[1], res.output_text
+        model=model,
+        instructions=instructions,
+        input=input_[content_column])
+    # format result
+    input_.update({'res': res.output_text.strip()})
+    # and return
+    return input_
 
-async def tweetsIterator(start, end):
-    for tweet in tweets[start:end]:
-        yield tweet
+async def inputsIterator(start, end):
+    for input_ in inputs[start:end]:
+        yield input_
 
 async def run_all(start, end):
     # Asynchronously call the function for each prompt
     tasks = [
-        doCompletetion(tweet)
-        async for tweet in tweetsIterator(start, end)
+        doCompletetion(input_)
+        async for input_ in inputsIterator(start, end)
     ]
     # Gather and run the tasks concurrently
     results = await asyncio.gather(*tasks)
     return results
 
-data_length = len(tweets)
+data_length = len(inputs)
 batchl = [
     [i * batch_size, (i + 1) * batch_size]
     for i in range(np.int32(data_length / batch_size + 1))
 ]
 batchl[-1][1] = min(data_length,  batchl[-1][1])
-
-headers = ["idx","fr", "en"]
 
 enumbatchl = list(enumerate(batchl))
 if reverse_batch_order:
@@ -92,7 +117,7 @@ if reverse_batch_order:
 
 for batch_idx, b in enumbatchl:
 
-        file = os.path.join(results_folder, f"translations_{batch_idx}.csv")
+        file = os.path.join(results_folder, f"translations_bsize_{batch_size}_bindex_{batch_idx}.csv")
         lockfile = file + ".lock"
 
         # If batch already computed continue or lock is granted, continue
@@ -106,7 +131,7 @@ for batch_idx, b in enumbatchl:
 
         # If not, create lock and start batch computation
         with open(lockfile, 'w') as f:
-            csv.writer(f).writerow(headers)
+            f.write("")
         print(f"Computing batch at index {batch_idx}...")
 
         # Run all courutines
@@ -117,8 +142,8 @@ for batch_idx, b in enumbatchl:
 
         # save to file
         with open(file, 'w') as f:
-            writer =  csv.writer(f)
-            writer.writerow(headers)
+            writer = csv.DictWriter(f, fieldnames=results[0].keys())
+            writer.writeheader()
             writer.writerows(results)
         print(f"LLM answers (={len(results)}) saved to {file}")
 
